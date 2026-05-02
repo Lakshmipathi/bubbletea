@@ -1,18 +1,16 @@
 name: neverbreak
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 jobs:
   race-repro:
-    runs-on: [self-hosted, neverbreak]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
-      - name: Run TestKillDuringStartupRace under -race
+          go-version-file: go.mod
+      - name: go test -race TestKillDuringStartupRace
         run: go test -race -count=3 -timeout=180s -run TestKillDuringStartupRace .
