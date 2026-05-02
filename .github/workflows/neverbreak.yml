@@ -1,0 +1,18 @@
+name: neverbreak
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  race-repro:
+    runs-on: [self-hosted, neverbreak]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Run TestKillDuringStartupRace under -race
+        run: go test -race -count=3 -timeout=180s -run TestKillDuringStartupRace .
