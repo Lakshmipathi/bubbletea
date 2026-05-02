@@ -43,8 +43,8 @@ Be sure to check out [Bubbles][bubbles], a library of common UI components for B
 ## Tutorial
 
 Bubble Tea is based on the functional design paradigms of [The Elm
-Architecture][elm], which happens to work nicely with Go. It's a delightful way
-to build applications.
+Architecture][elm], which happens to work nicely with Go. It's a delightful 
+way to build applications.
 
 This tutorial assumes you have a working knowledge of Go.
 
