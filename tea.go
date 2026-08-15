@@ -1202,7 +1202,7 @@ func (p *Program) Quit() {
 // The final render that you would normally see when quitting will be skipped.
 // [program.Run] returns a [ErrProgramKilled] error.
 func (p *Program) Kill() {
-	p.shutdown(true)
+	p.cancel()
 }
 
 // Wait waits/blocks until the underlying Program finished shutting down.
