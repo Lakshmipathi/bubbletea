@@ -502,6 +502,8 @@ type Program struct {
 	errs         chan error
 	finished     chan struct{}
 	shutdownOnce sync.Once
+	startedCh    chan struct{} // closed when Run() finishes initialization
+	startedOnce  sync.Once    // ensures startedCh is closed exactly once
 
 	profile *colorprofile.Profile // the terminal color profile
 
@@ -598,6 +600,8 @@ func NewProgram(model Model, opts ...ProgramOption) *Program {
 		msgs:         make(chan Msg),
 		errs:         make(chan error, 1),
 		rendererDone: make(chan struct{}),
+		finished:     make(chan struct{}),
+		startedCh:    make(chan struct{}),
 	}
 
 	// Apply all options to the program.
@@ -993,14 +997,12 @@ func (p *Program) Run() (returnModel Model, returnErr error) {
 		return nil, errors.New("bubbletea: InitialModel cannot be nil")
 	}
 
-	// Initialize context and teardown channel.
-	p.handlers = channelHandlers{}
 	cmds := make(chan Cmd)
-
-	p.finished = make(chan struct{})
+	markStarted := func() { p.startedOnce.Do(func() { close(p.startedCh) }) }
 	defer func() {
 		close(p.finished)
 	}()
+	defer markStarted() // ensure startedCh is closed even on early return
 
 	defer p.cancel()
 
@@ -1105,6 +1107,10 @@ func (p *Program) Run() (returnModel Model, returnErr error) {
 
 	// Start the renderer.
 	p.startRenderer()
+
+	// Signal that initialization is complete so shutdown() can safely
+	// access the fields that were just set up.
+	markStarted()
 
 	if !p.disableRenderer && shouldQuerySynchronizedOutput(p.environ) {
 		// Query for synchronized updates support (mode 2026) and unicode core
@@ -1241,6 +1247,10 @@ func (p *Program) flush() error {
 func (p *Program) shutdown(kill bool) {
 	p.shutdownOnce.Do(func() {
 		p.cancel()
+
+		// Wait for Run() to finish initialization so we can safely
+		// access the fields it sets up.
+		<-p.startedCh
 
 		// Wait for all handlers to finish.
 		p.handlers.shutdown()
